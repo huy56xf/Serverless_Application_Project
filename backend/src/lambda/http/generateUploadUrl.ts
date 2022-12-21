@@ -1,22 +1,33 @@
-import 'source-map-support/register'
-import {APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler} from 'aws-lambda'
-import {generateUploadUrl} from "../../businessLogic/ToDo";
+import { createAttachmentPresignedUrl } from '../../fileStorage/attachmentUtil';
+import { createLogger } from '../../utils/logger';
+import 'source-map-support/register';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import * as middy from 'middy';
+import { cors, httpErrorHandler } from 'middy/middlewares';
 
+const logger = createLogger('attachment');
 
-// function enherit from ToDo.ts. before using gerenateUploadUrl 
-// function call -> businessLogic/ToDo.ts -> dataLayer/todoAccess.ts
-export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    // TODO: Return a presigned URL to upload a file for a TODO item with the provided id
-    console.log("Processing Event ", event);
+export const handler = middy(
+  async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => 
+  {
+    logger.info('Processing event: ', event);
     const todoId = event.pathParameters.todoId;
-    const URL = await generateUploadUrl(todoId);
+    const uploadUrl = createAttachmentPresignedUrl(todoId);
+    logger.info('Upload url: %s', uploadUrl);
     return {
-        statusCode: 202,
-        headers: {
-            "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({
-            uploadUrl: URL,
-        })
-    };
-};
+      statusCode: 202,
+      body: JSON.stringify({
+        uploadUrl
+      })
+    }
+  }
+)
+
+handler
+  .use(httpErrorHandler())
+  .use(cors(
+    {
+      origin: "*",
+      credentials: true,
+    }
+  ))

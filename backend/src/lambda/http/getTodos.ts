@@ -1,25 +1,32 @@
+import { getTodos } from '../../businessLogic/ToDo';
+import { getUserId } from '../utils';
+
 import 'source-map-support/register'
-import {APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler} from 'aws-lambda';
-import {getAllToDo} from "../../businessLogic/ToDo";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
+import * as middy from 'middy'
+import { cors, httpErrorHandler } from 'middy/middlewares'
 
-
-// function enherit from ToDo.ts. before using getAllToDo I extract jwtToken from authorization to get userID
-// function call -> businessLogic/ToDo.ts -> dataLayer/todoAccess.ts
-// hàm được gọi trực tiếp qua http
-export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    // TODO: Get all TODO items for a current user
-    console.log("Processing Event ", event);
-    const authorization = event.headers.Authorization;
-    const split = authorization.split(' ');
-    const jwtToken = split[1];
-    const toDos = await getAllToDo(jwtToken);
+export const handler = middy(
+  async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => 
+  {
+    const userId: string = getUserId(event);
+    const items = await getTodos(userId);
     return {
-        statusCode: 200,
-        headers: {
-            "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({
-            "items": toDos,
-        }),
+      statusCode: 200,
+      body: JSON.stringify({
+        items
+      })
     }
-};
+  }
+)
+
+handler
+  .use(httpErrorHandler())
+  .use(
+    cors(
+      {
+        origin: "*",
+        credentials: true,
+      }
+    )
+  )

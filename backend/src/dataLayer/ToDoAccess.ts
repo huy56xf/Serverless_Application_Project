@@ -1,10 +1,12 @@
 import * as AWS from "aws-sdk";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { Types } from 'aws-sdk/clients/s3';
+
 import { TodoItem } from "../models/TodoItem";
 import { TodoUpdate } from "../models/TodoUpdate";
 
-
+// class ToDoAccess supply methods Interactive with aws s3
+// and ToDo.ts will enherit ToDoAccess class to define new functions 
 export class ToDoAccess {
     constructor(
         private readonly docClient: DocumentClient = new AWS.DynamoDB.DocumentClient(),
@@ -13,9 +15,19 @@ export class ToDoAccess {
         private readonly s3BucketName = process.env.S3_BUCKET_NAME) {
     }
 
+    async generateUploadUrl(todoId: string): Promise<string> {
+        console.log("Generating URL");
+        const url = this.s3Client.getSignedUrl('putObject', {
+            Bucket: this.s3BucketName,
+            Key: todoId,
+            Expires: 1000,
+        });
+        console.log(url);
+        return url as string;
+    }
+
     async getAllToDo(userId: string): Promise<TodoItem[]> {
         console.log("Getting all todo");
-
         const params = {
             TableName: this.todoTable,
             KeyConditionExpression: "#userId = :userId",
@@ -35,22 +47,34 @@ export class ToDoAccess {
     }
 
     async createToDo(todoItem: TodoItem): Promise<TodoItem> {
-        console.log("Creating new todo");
-
+        console.log("Creating todo");
         const params = {
             TableName: this.todoTable,
             Item: todoItem,
         };
-
         const result = await this.docClient.put(params).promise();
         console.log(result);
-
         return todoItem as TodoItem;
     }
 
+
+    async deleteToDo(todoId: string, userId: string): Promise<string> {
+        console.log("Deleting todo");
+        const params = {
+            TableName: this.todoTable,
+            Key: {
+                "userId": userId,
+                "todoId": todoId
+            },
+        };
+        const result = await this.docClient.delete(params).promise();
+        console.log(result);
+        return "" as string;
+    }
+    
+
     async updateToDo(todoUpdate: TodoUpdate, todoId: string, userId: string): Promise<TodoUpdate> {
         console.log("Updating todo");
-
         const params = {
             TableName: this.todoTable,
             Key: {
@@ -77,34 +101,6 @@ export class ToDoAccess {
 
         return attributes as TodoUpdate;
     }
+    
 
-    async deleteToDo(todoId: string, userId: string): Promise<string> {
-        console.log("Deleting todo");
-
-        const params = {
-            TableName: this.todoTable,
-            Key: {
-                "userId": userId,
-                "todoId": todoId
-            },
-        };
-
-        const result = await this.docClient.delete(params).promise();
-        console.log(result);
-
-        return "" as string;
-    }
-
-    async generateUploadUrl(todoId: string): Promise<string> {
-        console.log("Generating URL");
-
-        const url = this.s3Client.getSignedUrl('putObject', {
-            Bucket: this.s3BucketName,
-            Key: todoId,
-            Expires: 1000,
-        });
-        console.log(url);
-
-        return url as string;
-    }
 }

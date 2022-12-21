@@ -13,7 +13,6 @@ plugins:
 provider:
   name: aws
   runtime: nodejs12.x
- # lambdaHashingVersion: '20201221'
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
 
@@ -28,60 +27,7 @@ provider:
     TODOS_TABLE: udacity-serverless-${self:provider.stage}
     S3_BUCKET_NAME: udacity-serverless-992654605303${self:provider.stage}
 
-
-custom:
-  documentation:
-    api:
-      info:
-        version: '1.0.0'
-        title: serverless-api
-        description: serverless-api
-    models:
-      - name: CreateTodoRequest
-        contentType: "application/json"
-        schema:
-          required:
-            - name
-            - dueDate
-          properties:
-            name:
-              minLength: 1
-              type: string
-            dueDate:
-              type: string
-      - name: UpdateTodoRequest
-        contentType: "application/json"
-        schema:
-          required:
-            - name
-            - dueDate
-            - done
-          properties:
-            name:
-              minLength: 1
-              type: string
-            dueDate:
-              type: string
-            done:
-              type: boolean
   
-  
-  
-  
-  # logs:
-  #    Enable API Gateway logs
-  #   restApi: true
-
-  # iam:
-  #   role:
-  #     statements:
-  #       - Effect: Allow
-  #         Action:
-  #           - xray:PutTelemetryRecords
-  #           - xray:PutTraceSegments
-  #         Resource: "*"
-
-
 functions:
 
   Auth:
@@ -137,7 +83,7 @@ functions:
           - '*'
 
 
-#### Update todo
+# Update todo
 
   UpdateTodo:
     handler: src/lambda/http/updateTodo.handler
@@ -165,7 +111,7 @@ functions:
         Resource: 
           - '*'
 
-### Delete Todo
+# Delete Todo
 
   DeleteTodo:
     handler: src/lambda/http/deleteTodo.handler
@@ -295,3 +241,40 @@ resources:
               Action: 's3:GetObject'
               Resource: 'arn:aws:s3:::${self:provider.environment.S3_BUCKET_NAME}/*'
         Bucket: !Ref AttachmentsBucket
+
+
+custom:
+  documentation:
+    api:
+      info:
+        version: '1.0.0'
+        title: serverless-api
+        description: serverless-api
+    models:
+      - name: CreateTodoRequest
+        contentType: "application/json"
+        schema:
+          required:
+            - name
+            - dueDate
+          properties:
+            name:
+              minLength: 1
+              type: string
+            dueDate:
+              type: string
+      - name: UpdateTodoRequest
+        contentType: "application/json"
+        schema:
+          required:
+            - name
+            - dueDate
+            - done
+          properties:
+            name:
+              minLength: 1
+              type: string
+            dueDate:
+              type: string
+            done:
+              type: boolean
